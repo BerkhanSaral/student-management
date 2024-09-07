@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.tpe.entity.concretes.business.LessonProgram;
+import com.tpe.entity.concretes.business.Meet;
 import com.tpe.entity.concretes.business.StudentInfo;
 import com.tpe.entity.enums.Gender;
 import lombok.*;
@@ -82,4 +83,13 @@ public class User {
             inverseJoinColumns = @JoinColumn(name = "lesson_program_id")
     )
     private Set<LessonProgram> lessonProgramList;
+
+    @ManyToMany
+    @JsonIgnore
+    @JoinTable(
+            name = "meet_student_table",
+            joinColumns = @JoinColumn(name = "student_id"),
+            inverseJoinColumns = @JoinColumn(name = "meet_id")
+    )
+    private List<Meet> meetList;
 }

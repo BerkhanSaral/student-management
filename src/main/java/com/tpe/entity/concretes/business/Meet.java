@@ -4,10 +4,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.tpe.entity.concretes.user.User;
 import lombok.*;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
+import javax.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
@@ -35,9 +32,15 @@ public class Meet {
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "HH:mm")
     private LocalTime stopTime;
 
-
+    @ManyToMany
+    @JoinTable(
+            name = "meet_student_table",
+            joinColumns = @JoinColumn(name = "meet_id"),
+            inverseJoinColumns = @JoinColumn(name = "student_id")
+    )
     private List<User> studentList;
 
+    @ManyToOne(cascade = CascadeType.PERSIST)
     private User advisoryTeacher;
 }
 
