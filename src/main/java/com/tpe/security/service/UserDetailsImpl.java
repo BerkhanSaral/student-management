@@ -42,7 +42,6 @@ public class UserDetailsImpl implements UserDetails {
         this.ssn=ssn;
     }
 
-
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return authorities;

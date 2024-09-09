@@ -39,7 +39,7 @@ public class LessonProgram {
     )
     private Set<Lesson> lessons;
 
-    @ManyToMany(cascade = CascadeType.PERSIST)
+    @ManyToOne(cascade = CascadeType.PERSIST)
     private EducationTerm educationTerm;
 
     @ManyToMany(mappedBy = "lessonProgramList", fetch = FetchType.EAGER)
