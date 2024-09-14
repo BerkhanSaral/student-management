@@ -7,9 +7,10 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
-import java.util.List;
+import java.util.Set;
 
 @Entity
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -28,7 +29,7 @@ public class Lesson {
 
     @JsonIgnore
     @ManyToMany(mappedBy = "lessons", cascade = CascadeType.REMOVE)
-    private List<StudentInfo> lessonProgram;
+    private Set<LessonProgram> lessonPrograms;
 
 
 }

@@ -11,6 +11,7 @@ import java.time.LocalTime;
 import java.util.Set;
 
 @Entity
+
 @Getter
 @Setter
 @AllArgsConstructor
@@ -33,7 +34,7 @@ public class LessonProgram {
 
     @ManyToMany
     @JoinTable(
-            name = "lessons_program_lesson",
+            name = "lesson_program_lesson",
             joinColumns = @JoinColumn(name = "lessonprogram_id"),
             inverseJoinColumns = @JoinColumn(name = "lesson_id")
     )
@@ -47,7 +48,7 @@ public class LessonProgram {
     private Set<User> users;
 
     @PreRemove
-    private void removeLessonProgramFromUser() {
-        users.forEach(user -> user.getLessonProgramList().remove(this));
+    private void removeLessonProgramFromUser(){
+        users.forEach(user->user.getLessonProgramList().remove(this));
     }
 }
