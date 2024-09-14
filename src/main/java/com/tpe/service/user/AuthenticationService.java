@@ -6,7 +6,7 @@ import com.tpe.payload.messages.ErrorMessages;
 import com.tpe.payload.request.LoginRequest;
 import com.tpe.payload.request.UpdatePasswordRequest;
 import com.tpe.payload.response.authentication.AuthResponse;
-import com.tpe.repository.UserRepository;
+import com.tpe.repository.user.UserRepository;
 import com.tpe.security.jwt.JwtUtils;
 import com.tpe.security.service.UserDetailsImpl;
 import lombok.RequiredArgsConstructor;
