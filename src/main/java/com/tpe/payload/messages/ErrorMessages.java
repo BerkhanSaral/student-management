@@ -1,6 +1,9 @@
 package com.tpe.payload.messages;
 
+
 public class ErrorMessages {
+
+
 
     private ErrorMessages() {
 
@@ -21,5 +24,10 @@ public class ErrorMessages {
 
     public static final String NOT_FOUND_ADVISOR_MESSAGE = "Error: Advisor teacher with id: %s not found";
 
+    public static final String  NOT_FOUND_USER_WITH_ROLE_MESSAGE ="Error: user not found with role";
+
+    public static final String ALREADY_EXIST_ADVISOR_MESSAGE ="Error: advisor already exist" ;
+
+    public static final String EDUCATION_TERM_NOT_FOUND_MESSAGE ="Error: Education Term with id: %s not found " ;
 
 }

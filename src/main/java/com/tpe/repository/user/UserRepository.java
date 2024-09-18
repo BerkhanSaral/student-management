@@ -2,14 +2,11 @@ package com.tpe.repository.user;
 
 import com.tpe.entity.concretes.user.User;
 import com.tpe.entity.enums.RoleType;
-import com.tpe.payload.response.user.StudentResponse;
-import com.tpe.payload.response.user.UserResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
-import java.util.Arrays;
 import java.util.List;
 
 public interface UserRepository extends JpaRepository<User, Long> {
@@ -36,4 +33,12 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     List<User> findByAdvisorTeacherId(Long id);
 
+    @Query("select u from User w where u.isAdvisor =?1")
+    List<User> findAllByAdvisor(Boolean aTrue);
+
+    @Query("select max (u.studentNumber) from User u")
+    int getMaxStudentNumber();
+
+    @Query(value = "select count(u)>0 from User u where u.userRole.roleType= ?1")
+    boolean findStudent(RoleType roleType)
 }

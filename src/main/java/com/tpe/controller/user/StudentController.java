@@ -7,10 +7,7 @@ import com.tpe.service.user.StudentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 
@@ -23,9 +20,14 @@ public class StudentController {
 
     @PostMapping("/save")
     @PreAuthorize("hasAnyAuthority('ADMIN')")
-    public ResponseEntity<ResponseMessage<StudentResponse>> saveStudent(@RequestBody @Valid StudentRequest studentRequest){
+    public ResponseEntity<ResponseMessage<StudentResponse>> saveStudent(@RequestBody @Valid StudentRequest studentRequest) {
         return ResponseEntity.ok(studentService.saveStudent(studentRequest));
     }
 
+    @GetMapping("/changeStatus")
+    @PreAuthorize("hasAnyAuthority('ADMIN',MANAGER',ASSISTANT_MANAGER')")
+    public ResponseMessage changeStatusOfStudent(@RequestParam Long id,@RequestParam boolean status){
 
+        return studentService.changeStatusOfStudent(id,status);
+    }
 }

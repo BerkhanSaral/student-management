@@ -4,6 +4,7 @@ import com.tpe.payload.request.user.TeacherRequest;
 import com.tpe.payload.response.ResponseMessage;
 import com.tpe.payload.response.user.StudentResponse;
 import com.tpe.payload.response.user.TeacherResponse;
+import com.tpe.payload.response.user.UserResponse;
 import com.tpe.service.user.TeacherService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -37,4 +38,30 @@ public class TeacherController {
         String userName = request.getHeader("username");
         return teacherService.getAllStudentByAdvisorUsername(userName);
     }
+
+    @PreAuthorize("hasAnyAuthority('ADMIN',MANAGER','ASSISTANT_MANAGER')")
+    @PutMapping("/update/{userId}")
+    public ResponseMessage<TeacherResponse> updateTeacherForManagers(@RequestBody @Valid TeacherRequest teacherRequest,
+                                                                     @PathVariable Long userId){
+        return  teacherService.updateTeacherForManagers(teacherRequest,userId);
+    }
+
+    @PreAuthorize("hasAnyAuthority('ADMIN',MANAGER','ASSISTANT_MANAGER')")
+    @PatchMapping("/saveAdvisorTeacher/{teacherId}")
+    public ResponseMessage<UserResponse> saveAdvisorTeacher(@PathVariable Long teacherId){
+        return teacherService.saveAdvisorTeacher(teacherId);
+    }
+
+    @PreAuthorize("hasAnyAuthority('ADMIN',MANAGER','ASSISTANT_MANAGER')")
+    @DeleteMapping("/deleteAdvisorTeacherById/{id}")
+    public ResponseMessage<UserResponse> deleteAdvisorTeacherById(@PathVariable Long id){
+        return teacherService.deleteAdvisorTeacherById(id);
+    }
+
+    @PreAuthorize("hasAnyAuthority('ADMIN',MANAGER','ASSISTANT_MANAGER')")
+    @GetMapping("/getAllAdvisorTeacher")
+    public List<UserResponse> getAllAdvisorTeacher(){
+        return teacherService.getAllAdvisorTeacher();
+    }
+
 }
