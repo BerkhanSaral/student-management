@@ -5,6 +5,7 @@ import com.tpe.entity.enums.RoleType;
 import com.tpe.payload.mappers.UserMapper;
 import com.tpe.payload.messages.SuccessMessages;
 import com.tpe.payload.request.user.StudentRequest;
+import com.tpe.payload.request.user.StudentRequestWithoutPassword;
 import com.tpe.payload.response.ResponseMessage;
 import com.tpe.payload.response.user.StudentResponse;
 import com.tpe.repository.user.UserRepository;
@@ -12,8 +13,11 @@ import com.tpe.service.helper.MethodHelper;
 import com.tpe.service.validator.UniquePropertyValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import javax.servlet.http.HttpServletRequest;
 
 @Service
 @RequiredArgsConstructor
@@ -41,7 +45,7 @@ public class StudentService {
         student.setAdvisorTeacherId(advisorTeacher.getId());
         student.setPassword(passwordEncoder.encode(studentRequest.getPassword()));
         student.setUserRole(userRoleService.getUserRole(RoleType.STUDENT));
-        student.setIsAdvisor(true);
+        student.setActive(true);
         student.setIsAdvisor(Boolean.FALSE);
         student.setStudentNumber(getLastNumber());
 
@@ -68,8 +72,62 @@ public class StudentService {
         userRepository.save(student);
 
         return ResponseMessage.builder()
-                .message("Student is "+(status ? "active" : "passive"))
+                .message("Student is " + (status ? "active" : "passive"))
                 .httpStatus(HttpStatus.OK)
                 .build();
+    }
+
+    public ResponseEntity<String> updateStudent(StudentRequestWithoutPassword studentRequest, HttpServletRequest request) {
+
+        String username = (String) request.getAttribute("username");
+        User student = userRepository.findByUsername(username);
+
+        uniquePropertyValidator.checkUniqueProperties(student, studentRequest);
+
+        student.setMotherName(studentRequest.getMotherName());
+        student.setMotherName(studentRequest.getFatherName());
+        student.setBirthDay(studentRequest.getBirthDay());
+        student.setEmail(studentRequest.getEmail());
+        student.setPhoneNumber(studentRequest.getPhoneNumber());
+        student.setBirthPlace(studentRequest.getBirthPlace());
+        student.setGender(studentRequest.getGender());
+        student.setName(studentRequest.getName());
+        student.setSurname(studentRequest.getSurname());
+        student.setSsn(studentRequest.getSsn());
+
+        userRepository.save(student);
+
+        String message = SuccessMessages.USER_UPDATE;
+
+        return ResponseEntity.ok(message);
+    }
+
+    public ResponseMessage<StudentResponse> updateStudentForManagers(Long userId, StudentRequest studentRequest) {
+
+        User user = methodHelper.isUserExist(userId);
+
+        methodHelper.checkRole(user,RoleType.STUDENT);
+
+        uniquePropertyValidator.checkUniqueProperties(user,studentRequest);
+
+        user.setName(studentRequest.getName());
+        user.setSurname(studentRequest.getSurname());
+        user.setBirthDay(studentRequest.getBirthDay());
+        user.setBirthPlace(studentRequest.getBirthPlace());
+        user.setSsn(studentRequest.getSsn());
+        user.setEmail(studentRequest.getEmail());
+        user.setPhoneNumber(studentRequest.getPhoneNumber());
+        user.setGender(studentRequest.getGender());
+        user.setMotherName(studentRequest.getMotherName());
+        user.setFatherName(studentRequest.getFatherName());
+        user.setPassword(studentRequest.getPassword());
+        user.setAdvisorTeacherId(studentRequest.getAdvisorTeacherId());
+
+        return ResponseMessage.<StudentResponse>builder()
+                .object(userMapper.mapUserToStudentResponse(user))
+                .message(SuccessMessages.STUDENT_UPDATE)
+                .httpStatus(HttpStatus.OK)
+                .build();
+
     }
 }
