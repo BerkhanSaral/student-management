@@ -16,7 +16,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.GetMapping;
 
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -45,7 +44,7 @@ public class LessonService {
         boolean lessonExists = lessonRepository.existsLessonByLessonNameEqualsIgnoreCase(lessonName);
 
         if (lessonExists) {
-            throw new ConflictException(String.format(ErrorMessages.LESSON_ALREADY_EXIST_WITH_LESSON_NAME, lessonName))
+            throw new ConflictException(String.format(ErrorMessages.LESSON_ALREADY_EXIST_WITH_LESSON_NAME, lessonName));
         } else {
             return false;
         }
@@ -55,6 +54,7 @@ public class LessonService {
 
         isLessonExistById(id);
         lessonRepository.deleteById(id);
+        //lessonRepository.delete(isLessonExistById(id));
         return ResponseMessage.builder()
                 .message(SuccessMessages.LESSON_DELETE)
                 .httpStatus(HttpStatus.OK)
@@ -63,7 +63,7 @@ public class LessonService {
 
     private Lesson isLessonExistById(Long id) {
         return lessonRepository.findById(id).orElseThrow(
-                () -> new ResourceNotFoundException(ErrorMessages.NOT_FOUND_LESSON_MESSAGE, id));
+                () -> new ResourceNotFoundException(String.format(ErrorMessages.NOT_FOUND_LESSON_MESSAGE, id)));
     }
 
     public ResponseMessage<LessonResponse> getLessonByLessonName(String lessonName) {
@@ -74,11 +74,13 @@ public class LessonService {
                     .object(lessonMapper.mapLessonToLessonResponse(lessonRepository.getLessonByLessonName(lessonName).get()))
                     .build();
         } else {
-            ResponseMessage.<LessonResponse>builder()
+            return ResponseMessage.<LessonResponse>builder()
                     .message(String.format(ErrorMessages.NOT_FOUND_LESSON_MESSAGE, lessonName))
+                    .build();
         }
 
     }
+
 
     public Page<LessonResponse> findLessonByPage(int page, int size, String sort, String type) {
 
@@ -93,5 +95,20 @@ public class LessonService {
         return idSet.stream()
                 .map(this::isLessonExistById)
                 .collect(Collectors.toSet());
+    }
+
+
+    public LessonResponse updateLessonById(Long lessonId, LessonRequest lessonRequest) {
+
+        Lesson lesson = isLessonExistById(lessonId);
+        if (!(lesson.getLessonName().equals(lessonRequest.getLessonName())) && (lessonRepository.existsByLessonName(lessonRequest.getLessonName()))) {
+            throw new ConflictException(String.format(ErrorMessages.ALREADY_REGISTER_LESSON_MESSAGE));
+        }
+        Lesson updatedLesson = lessonMapper.mapLessonRequestToUpdatedLesson(lessonId, lessonRequest);
+        updatedLesson.setLessonPrograms(lesson.getLessonPrograms());
+        Lesson savedLesson = lessonRepository.save(updatedLesson);
+
+        return lessonMapper.mapLessonToLessonResponse(savedLesson);
+
     }
 }

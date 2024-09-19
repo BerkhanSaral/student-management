@@ -7,6 +7,7 @@ import com.tpe.payload.response.business.LessonResponse;
 import com.tpe.service.business.LessonService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -52,13 +53,16 @@ public class LessonController {
 
     @GetMapping("/getAllLessonByLessonId")
     @PreAuthorize("hasAnyAuthority('ADMIN','MANAGER','ASSISTANT_MANAGER')")
-    public Set<Lesson>getAllLessonByLessonId(@RequestParam(name = "lessonId")Set<Long>idSet){
+    public Set<Lesson> getAllLessonByLessonId(@RequestParam(name = "lessonId") Set<Long> idSet) {
         return lessonService.getLessonByLessonIdSet(idSet);
     }
 
-
-
-
+    @GetMapping("/update/{lessonId}")
+    @PreAuthorize("hasAnyAuthority('ADMIN','MANAGER','ASSISTANT_MANAGER')")
+    public ResponseEntity<LessonResponse> updateLesson(@PathVariable Long lessonId,
+                                                       @RequestBody @Valid LessonRequest lessonRequest) {
+        return ResponseEntity.ok(lessonService.updateLessonById(lessonId,lessonRequest));
+    }
 
 
 }
