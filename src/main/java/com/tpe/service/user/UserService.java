@@ -1,7 +1,6 @@
 package com.tpe.service.user;
 
 import com.tpe.entity.concretes.user.User;
-import com.tpe.entity.concretes.user.UserRole;
 import com.tpe.entity.enums.RoleType;
 import com.tpe.exception.BadRequestException;
 import com.tpe.exception.ConflictException;
@@ -56,8 +55,8 @@ public class UserService {
         // !!! DTO -- > POJO
         User user = userMapper.mapUserRequestToUser(userRequest);
         // !!! Rol bilgisi setleniyor
-        if(userRole.equalsIgnoreCase(RoleType.ADMIN.name())){
-            if(Objects.equals(userRequest.getUsername(), "Admin")){
+        if (userRole.equalsIgnoreCase(RoleType.ADMIN.name())) {
+            if (Objects.equals(userRequest.getUsername(), "Admin")) {
                 user.setBuilt_in(true);
             }
             user.setUserRole(userRoleService.getUserRole(RoleType.ADMIN));
@@ -66,7 +65,7 @@ public class UserService {
         } else if (userRole.equalsIgnoreCase("ViceDean")) {
             user.setUserRole(userRoleService.getUserRole(RoleType.ASSISTANT_MANAGER));
         } else {
-            throw  new ResourceNotFoundException(String.format(ErrorMessages.NOT_FOUND_USER_ROLE_MESSAGE, userRole));
+            throw new ResourceNotFoundException(String.format(ErrorMessages.NOT_FOUND_USER_ROLE_MESSAGE, userRole));
         }
         //!!! password encode ediliyor
         user.setPassword(passwordEncoder.encode(user.getPassword()));
@@ -90,13 +89,13 @@ public class UserService {
     public ResponseMessage<BaseUserResponse> getUserById(Long userId) {
 
         BaseUserResponse baseUserResponse;
-        User user = userRepository.findById(userId).orElseThrow(()->
+        User user = userRepository.findById(userId).orElseThrow(() ->
                 new ResourceNotFoundException(String.format(ErrorMessages.NOT_FOUND_USER_MESSAGE, userId)));
 
         // UserResponse --> Admin , Manager, Assistant_Manager
         // TeacherResponse --> Teacher
         // StudentResponse --> Student
-        if(user.getUserRole().getRoleType() == RoleType.STUDENT){
+        if (user.getUserRole().getRoleType() == RoleType.STUDENT) {
             baseUserResponse = userMapper.mapUserToStudentResponse(user);
         } else if (user.getUserRole().getRoleType() == RoleType.TEACHER) {
             baseUserResponse = userMapper.mapUserToTeacherResponse(user);
@@ -110,6 +109,7 @@ public class UserService {
                 .object(baseUserResponse)
                 .build();
     }
+
     // Not : deleteUser() **********************************************************
     public String deleteUserById(Long id, HttpServletRequest request) {
         // silinecek user var mi kontrolu
@@ -118,13 +118,13 @@ public class UserService {
         String userName = (String) request.getAttribute("username");
         User user2 = userRepository.findByUsername(userName); // silme islemini talep eden user
         // builtIn kontrolu
-        if (Boolean.TRUE.equals(user    .getBuilt_in())) { // condition : user.getBuilt_in()
+        if (Boolean.TRUE.equals(user.getBuilt_in())) { // condition : user.getBuilt_in()
             throw new ConflictException(ErrorMessages.NOT_PERMITTED_METHOD_MESSAGE);
             // MANAGER sadece Teacher, student, Assistant_Manager silebilir
         } else if (user2.getUserRole().getRoleType() == RoleType.MANAGER) {
-            if (!(  (user.getUserRole().getRoleType() == RoleType.TEACHER) ||
+            if (!((user.getUserRole().getRoleType() == RoleType.TEACHER) ||
                     (user.getUserRole().getRoleType() == RoleType.STUDENT) ||
-                    (user.getUserRole().getRoleType() == RoleType.ASSISTANT_MANAGER) )) {
+                    (user.getUserRole().getRoleType() == RoleType.ASSISTANT_MANAGER))) {
                 throw new BadRequestException(ErrorMessages.NOT_PERMITTED_METHOD_MESSAGE);
             }
             // Mudur Yardimcisi sadece Teacher veya Student silebilir
@@ -137,6 +137,7 @@ public class UserService {
         userRepository.deleteById(id);
         return SuccessMessages.USER_DELETE;
     }
+
     public ResponseMessage<BaseUserResponse> updateUser(UserRequest userRequest, Long userId) {
 
         User user = methodHelper.isUserExist(userId);
@@ -158,6 +159,7 @@ public class UserService {
                 .object(userMapper.mapUserToUserResponse(savedUser))
                 .build();
     }
+
     // Not: updateUserForUser() **********************************************************
     public ResponseEntity<String> updateUserForUsers(UserRequestWithoutPassword userRequest,
                                                      HttpServletRequest request) {
@@ -197,7 +199,11 @@ public class UserService {
                 .collect(Collectors.toList());
     }
 
-    public long countAllAdmins(){
+    public long countAllAdmins() {
         return userRepository.countAdmin(RoleType.ADMIN);
+    }
+
+    public User getTeacherByUsername(String teacherUsername) {
+        return userRepository.findByUsername(teacherUsername);
     }
 }
