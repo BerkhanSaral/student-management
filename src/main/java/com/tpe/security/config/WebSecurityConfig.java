@@ -85,6 +85,9 @@ public class WebSecurityConfig {
             "/js/**",
             "/contactMessage/save",
             "/auth/login",
-            "/"
+            "/",
+            "/v3/api-docs/**", // eklenecek
+            "swagger-ui.html", // eklenecek
+            "/swagger-ui/**", // eklenecek
     };
 }

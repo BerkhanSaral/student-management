@@ -53,7 +53,7 @@ public class MeetService {
                 meetRequest.getStartTime(),
                 meetRequest.getStopTime());
 
-        for(Long studentId: meetRequest.getStudentIds()){
+        for (Long studentId : meetRequest.getStudentIds()) {
             User student = methodHelper.isUserExist(studentId);
             methodHelper.checkRole(student, RoleType.STUDENT);
 
@@ -77,18 +77,18 @@ public class MeetService {
                 .build();
     }
 
-    private void checkMeetConflict(Long userId, LocalDate date, LocalTime startTime, LocalTime stopTime){
+    private void checkMeetConflict(Long userId, LocalDate date, LocalTime startTime, LocalTime stopTime) {
         List<Meet> meets;
 
-        if(Boolean.TRUE.equals(userService.getUserByUserId(userId).getIsAdvisor())){
+        if (Boolean.TRUE.equals(userService.getUserByUserId(userId).getIsAdvisor())) {
             meets = meetRepository.getByAdvisoryTeacher_IdEquals(userId);
-        } else  meets = meetRepository.findByStudentList_IdEquals(userId);
+        } else meets = meetRepository.findByStudentList_IdEquals(userId);
 
-        for(Meet meet: meets){
+        for (Meet meet : meets) {
             LocalTime existingStartTime = meet.getStartTime();
             LocalTime existingStopTime = meet.getStopTime();
 
-            if(meet.getDate().equals(date) &&
+            if (meet.getDate().equals(date) &&
                     (
                             (startTime.isAfter(existingStartTime) && startTime.isBefore(existingStopTime)) ||
                                     (stopTime.isAfter(existingStartTime) && stopTime.isBefore(existingStopTime)) ||
@@ -112,20 +112,20 @@ public class MeetService {
                 .httpStatus(HttpStatus.OK)
                 .build();
     }
-    private Meet isMeetExistById(Long meetId){
+
+    private Meet isMeetExistById(Long meetId) {
         return meetRepository.findById(meetId).orElseThrow(
-                ()-> new ResourceNotFoundException(String.format(ErrorMessages.MEET_NOT_FOUND_MESSAGE, meetId))
+                () -> new ResourceNotFoundException(String.format(ErrorMessages.MEET_NOT_FOUND_MESSAGE, meetId))
         );
     }
 
-    private void isTeacherControl(Meet meet, HttpServletRequest httpServletRequest){
+    private void isTeacherControl(Meet meet, HttpServletRequest httpServletRequest) {
         String userName = (String) httpServletRequest.getAttribute("username");
         User teacher = methodHelper.isUserExistByUsername(userName);
-        if(
+        if (
                 (teacher.getUserRole().getRoleType().equals(RoleType.TEACHER)) &&
                         !(meet.getAdvisoryTeacher().getId().equals(teacher.getId()))
-        )
-        {
+        ) {
             throw new BadRequestException(ErrorMessages.NOT_PERMITTED_METHOD_MESSAGE);
         }
     }
@@ -142,14 +142,14 @@ public class MeetService {
                 .collect(Collectors.toList());
     }
 
-    public List<MeetResponse>getAll(){
+    public List<MeetResponse> getAll() {
         return meetRepository.findAll()
                 .stream()
                 .map(meetMapper::mapMeetToMeetResponse)
                 .collect(Collectors.toList());
     }
 
-    public ResponseMessage<MeetResponse>getMeetById(Long meetId){
+    public ResponseMessage<MeetResponse> getMeetById(Long meetId) {
         return ResponseMessage.<MeetResponse>builder()
                 .message(SuccessMessages.MEET_FOUND)
                 .httpStatus(HttpStatus.OK)
@@ -158,19 +158,58 @@ public class MeetService {
     }
 
     public ResponseEntity<Page<MeetResponse>> getAllMeetByTeacher(HttpServletRequest httpServletRequest,
-                                                                  int page,
-                                                                  int size){
+                                                                  int page, int size) {
         String userName = (String) httpServletRequest.getAttribute("username");
         User advisoryTeacher = userService.getTeacherByUsername(userName);
         methodHelper.checkAdvisor(advisoryTeacher);
 
-        Pageable pageable = pageableHelper.getPageableWithProperties(page,size);
+        Pageable pageable = pageableHelper.getPageableWithProperties(page, size);
         return ResponseEntity.ok(meetRepository.findByAdvisoryTeacher_IdEquals(advisoryTeacher.getId(), pageable)
                 .map(meetMapper::mapMeetToMeetResponse));
     }
 
-    public Page<MeetResponse> getAllMeetByPage(int page, int size){
+    public Page<MeetResponse> getAllMeetByPage(int page, int size) {
         Pageable pageable = pageableHelper.getPageableWithProperties(page, size);
         return meetRepository.findAll(pageable).map(meetMapper::mapMeetToMeetResponse);
+    }
+
+    public ResponseMessage<MeetResponse> updateMeet(Long meetId, HttpServletRequest httpServletRequest, MeetRequest meetRequest) {
+
+        Meet meet = isMeetExistById(meetId);
+        isTeacherControl(meet, httpServletRequest);
+        dateTimeValidator.checkTimeWithException(meetRequest.getStartTime(),
+                meetRequest.getStopTime());
+
+        if (
+                !(meet.getDate().equals(meetRequest.getDate()) &&
+                        meet.getStartTime().equals(meetRequest.getStartTime()) &&
+                        meet.getStopTime().equals(meetRequest.getStopTime())
+                )
+        ) {
+            for (Long studentId : meetRequest.getStudentIds()) {
+                checkMeetConflict(studentId,
+                        meetRequest.getDate(),
+                        meetRequest.getStartTime(),
+                        meetRequest.getStopTime());
+            }
+            checkMeetConflict(meet.getAdvisoryTeacher().getId(),
+                    meetRequest.getDate(),
+                    meetRequest.getStartTime(),
+                    meetRequest.getStopTime());
+        }
+
+        List<User> students = userService.getStudentById(meetRequest.getStudentIds());
+        Meet updatedMeet = meetMapper.mapMeetUpdatedRequestToMeet(meetRequest, meetId);
+        updatedMeet.setStudentList(students);
+        updatedMeet.setAdvisoryTeacher(meet.getAdvisoryTeacher());
+
+        Meet savedMeet = meetRepository.save(updatedMeet);
+
+        return ResponseMessage.<MeetResponse>builder()
+                .message(SuccessMessages.MEET_UPDATE)
+                .object(meetMapper.mapMeetToMeetResponse(savedMeet))
+                .httpStatus(HttpStatus.OK)
+                .build();
+
     }
 }

@@ -33,7 +33,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     List<User> findByAdvisorTeacherId(Long id);
 
-    @Query("select u from User w where u.isAdvisor =?1")
+    @Query("SELECT u from User u where u.isAdvisor =?1")
     List<User> findAllByAdvisor(Boolean aTrue);
 
     @Query("select max (u.studentNumber) from User u")
