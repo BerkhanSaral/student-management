@@ -1,5 +1,6 @@
 package com.tpe.service.user;
 
+import com.tpe.entity.concretes.business.LessonProgram;
 import com.tpe.entity.concretes.user.User;
 import com.tpe.entity.enums.RoleType;
 import com.tpe.exception.ConflictException;
@@ -12,6 +13,7 @@ import com.tpe.payload.response.user.StudentResponse;
 import com.tpe.payload.response.user.TeacherResponse;
 import com.tpe.payload.response.user.UserResponse;
 import com.tpe.repository.user.UserRepository;
+import com.tpe.service.business.LessonProgramService;
 import com.tpe.service.helper.MethodHelper;
 import com.tpe.service.validator.UniquePropertyValidator;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +22,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -30,27 +33,27 @@ public class TeacherService {
     private final UniquePropertyValidator uniquePropertyValidator;
     private final UserMapper userMapper;
     private final UserRoleService userRoleService;
-    private PasswordEncoder passwordEncoder;
+    private final PasswordEncoder passwordEncoder;
     private final MethodHelper methodHelper;
+    private final LessonProgramService lessonProgramService;
 
     public ResponseMessage<TeacherResponse> saveTeacher(TeacherRequest teacherRequest) {
-
+        Set<LessonProgram> lessonProgramSet =
+                lessonProgramService.getLessonProgramById(teacherRequest.getLessonsIdList());
         uniquePropertyValidator.checkDuplicate(
-                teacherRequest.getUsername()
-                , teacherRequest.getSsn()
-                , teacherRequest.getPhoneNumber()
-                , teacherRequest.getEmail()
+                teacherRequest.getUsername(),
+                teacherRequest.getSsn(),
+                teacherRequest.getPhoneNumber(),
+                teacherRequest.getEmail()
         );
+
         User teacher = userMapper.mapTeacherRequestToUser(teacherRequest);
         teacher.setUserRole(userRoleService.getUserRole(RoleType.TEACHER));
-
+        teacher.setLessonProgramList(lessonProgramSet);
         teacher.setPassword(passwordEncoder.encode(teacherRequest.getPassword()));
-
-        if (teacherRequest.getIsAdvisorTeacher()) {
+        if(teacherRequest.getIsAdvisorTeacher()){
             teacher.setIsAdvisor(Boolean.TRUE);
-        } else {
-            teacher.setIsAdvisor(Boolean.FALSE);
-        }
+        } else teacher.setIsAdvisor(Boolean.FALSE);
 
         User savedTeacher = userRepository.save(teacher);
 
@@ -60,10 +63,9 @@ public class TeacherService {
                 .build();
     }
 
-
     public List<StudentResponse> getAllStudentByAdvisorUsername(String userName) {
 
-        User teacher = methodHelper.isUserExistsByUsername(userName);
+        User teacher = methodHelper.isUserExistByUsername(userName);
         methodHelper.checkAdvisor(teacher);
 
         return userRepository.findByAdvisorTeacherId(teacher.getId())
@@ -72,18 +74,22 @@ public class TeacherService {
                 .collect(Collectors.toList());
     }
 
-    public ResponseMessage<TeacherResponse> updateTeacherForManagers(TeacherRequest teacherRequest, Long userId) {
-
+    // Not: updateTeacher() **********************************************************
+    public ResponseMessage<TeacherResponse> updateTeacherForManagers(TeacherRequest teacherRequest,
+                                                                     Long userId) {
         User user = methodHelper.isUserExist(userId);
+        // !!! Parametrede gelen id bir teacher a ait degilse exception firlatiliyor
+        methodHelper.checkRole(user,RoleType.TEACHER);
 
-        methodHelper.checkRole(user, RoleType.TEACHER);
-
+        Set<LessonProgram> lessonPrograms =
+                lessonProgramService.getLessonProgramById(teacherRequest.getLessonsIdList());
+        // !!! unique kontrolu
         uniquePropertyValidator.checkUniqueProperties(user, teacherRequest);
-
+        // !!! DTO --> POJO
         User updatedTeacher = userMapper.mapTeacherRequestToUpdatedUser(teacherRequest, userId);
-
+        // !!! props. that does n't exist in mappers
         updatedTeacher.setPassword(passwordEncoder.encode(teacherRequest.getPassword()));
-
+        updatedTeacher.setLessonProgramList(lessonPrograms);
         updatedTeacher.setUserRole(userRoleService.getUserRole(RoleType.TEACHER));
 
         User savedTeacher = userRepository.save(updatedTeacher);
@@ -95,13 +101,16 @@ public class TeacherService {
                 .build();
     }
 
+    // Not: SaveAdvisorTeacher() ***********************************************************
     public ResponseMessage<UserResponse> saveAdvisorTeacher(Long teacherId) {
 
+        // !!! Save de yazdigimiz ya varsa kontrolu
         User teacher = methodHelper.isUserExist(teacherId);
+        // !!! id ile gelen uer Teacher mi kontrolu
+        methodHelper.checkRole(teacher,RoleType.TEACHER);
 
-        methodHelper.checkRole(teacher, RoleType.TEACHER);
-
-        if (Boolean.TRUE.equals(teacher.getIsAdvisor())) {
+        // !!! id ile gelen teacher zaten advisor mi kontrolu ?
+        if(Boolean.TRUE.equals(teacher.getIsAdvisor())) { // condition : teacher.getIsAdvisor()
             throw new ConflictException(
                     String.format(ErrorMessages.ALREADY_EXIST_ADVISOR_MESSAGE, teacherId));
         }
@@ -116,22 +125,25 @@ public class TeacherService {
                 .build();
     }
 
+    // Not : deleteAdvisorTeacherById() ********************************************************
     public ResponseMessage<UserResponse> deleteAdvisorTeacherById(Long teacherId) {
 
         User teacher = methodHelper.isUserExist(teacherId);
+        // !!! id ile gelen user Teacher mi kontrolu
+        methodHelper.checkRole(teacher,RoleType.TEACHER);
 
-        methodHelper.checkRole(teacher, RoleType.TEACHER);
-
+        // !!! id ile gelen teacheradvisor mi kontrolu ?
         methodHelper.checkAdvisor(teacher);
 
         teacher.setIsAdvisor(Boolean.FALSE);
-
         userRepository.save(teacher);
 
-        List<User> allStudent = userRepository.findByAdvisorTeacherId(teacherId);
-        if (!allStudent.isEmpty()) {
-            allStudent.forEach(student -> student.setAdvisorTeacherId(null));
+        // !!! silinen advisor Teacherlarin Student lari varsa bu iliskinin de koparilmasi gerekiyor
+        List<User> allStudents = userRepository.findByAdvisorTeacherId(teacherId);
+        if(!allStudents.isEmpty()) {
+            allStudents.forEach(students -> students.setAdvisorTeacherId(null));
         }
+
         return ResponseMessage.<UserResponse>builder()
                 .message(SuccessMessages.ADVISOR_TEACHER_DELETE)
                 .object(userMapper.mapUserToUserResponse(teacher))
@@ -139,12 +151,12 @@ public class TeacherService {
                 .build();
     }
 
+    // Not : getAllAdvisorTeacher() **************************************************************
     public List<UserResponse> getAllAdvisorTeacher() {
 
-        return userRepository.findAllByAdvisor(Boolean.TRUE)
+        return userRepository.findAllByAdvisor(Boolean.TRUE) // JPQL
                 .stream()
                 .map(userMapper::mapUserToUserResponse)
                 .collect(Collectors.toList());
-
     }
 }

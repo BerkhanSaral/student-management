@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.tpe.entity.concretes.business.EducationTerm;
 import com.tpe.entity.concretes.business.Lesson;
 import com.tpe.entity.enums.Day;
+import com.tpe.payload.response.user.StudentResponse;
+import com.tpe.payload.response.user.TeacherResponse;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -25,6 +27,7 @@ public class LessonProgramResponse {
     private LocalTime stopTime;
     private Set<Lesson> lessonName;
     private EducationTerm educationTerm;
-
+    private Set<TeacherResponse> teachers;
+    private Set<StudentResponse> students;
 
 }

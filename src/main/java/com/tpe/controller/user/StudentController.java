@@ -1,5 +1,6 @@
 package com.tpe.controller.user;
 
+import com.tpe.payload.request.business.ChooseLessonProgramWithId;
 import com.tpe.payload.request.user.StudentRequest;
 import com.tpe.payload.request.user.StudentRequestWithoutPassword;
 import com.tpe.payload.response.ResponseMessage;
@@ -14,38 +15,50 @@ import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 
 @RestController
-@RequiredArgsConstructor
 @RequestMapping("/student")
+@RequiredArgsConstructor
 public class StudentController {
 
     private final StudentService studentService;
 
-    @PostMapping("/save")
+    @PostMapping("/save") // http://localhost:8080/student/save + POST + JSON
     @PreAuthorize("hasAnyAuthority('ADMIN')")
     public ResponseEntity<ResponseMessage<StudentResponse>> saveStudent(@RequestBody @Valid StudentRequest studentRequest) {
         return ResponseEntity.ok(studentService.saveStudent(studentRequest));
     }
 
-    @PatchMapping("/update")
+    // Not: updateStudentForStudents() ***********************************************
+    // !!! ogrencinin kendisini update etme islemi
+    @PatchMapping("/update")   // http://localhost:8080/student/update
     @PreAuthorize("hasAnyAuthority('STUDENT')")
-    public ResponseEntity<String> updateStudent(@RequestBody @Valid StudentRequestWithoutPassword studentRequestWithoutPassword,
-                                                HttpServletRequest request) {
-
+    public ResponseEntity<String> updateStudent(@RequestBody @Valid
+                                                StudentRequestWithoutPassword studentRequestWithoutPassword,
+                                                HttpServletRequest request){
         return studentService.updateStudent(studentRequestWithoutPassword, request);
     }
 
-    @PutMapping("/update/{userId}")
-    @PreAuthorize("hasAnyAuthority('ADMIN',MANAGER','ASSISTANT_MANAGER')")
-    public ResponseMessage<StudentResponse> updateStudentForManagers(
-            @PathVariable Long userId, @RequestBody @Valid StudentRequest studentRequest
-    ){
+    // Not: updateStudent() **********************************************************
+    @PutMapping("/update/{userId}")   // http://localhost:8080/student/update/2
+    @PreAuthorize("hasAnyAuthority('ADMIN','MANAGER','ASSISTANT_MANAGER')")
+    public ResponseMessage<StudentResponse>updateStudentForManagers(
+            @PathVariable Long userId,
+            @RequestBody @Valid StudentRequest studentRequest){
         return studentService.updateStudentForManagers(userId,studentRequest);
     }
 
-    @GetMapping("/changeStatus")
-    @PreAuthorize("hasAnyAuthority('ADMIN',MANAGER',ASSISTANT_MANAGER')")
-    public ResponseMessage changeStatusOfStudent(@RequestParam Long id, @RequestParam boolean status) {
+    // Not: addLessonProgramToStudentLessonsProgram() *************************
+    // !!! Student kendine lessonProgram ekliyor
+    @PreAuthorize("hasAnyAuthority('STUDENT')")
+    @PostMapping("/addLessonProgramToStudent") // http://localhost:8080/student/addLessonProgramToStudent
+    public ResponseMessage<StudentResponse> addLessonProgram(HttpServletRequest request,
+                                                             @RequestBody @Valid ChooseLessonProgramWithId chooseLessonProgramWithId){
+        String userName = (String) request.getAttribute("username");
+        return studentService.addLessonProgramToStudent(userName,chooseLessonProgramWithId);
+    }
 
+    @GetMapping("/changeStatus")  // http://localhost:8080/student/changeStatus?id=1&status=true + GET
+    @PreAuthorize("hasAnyAuthority('ADMIN','MANAGER','ASSISTANT_MANAGER')")
+    public ResponseMessage changeStatusOfStudent(@RequestParam Long id, @RequestParam boolean status){
         return studentService.changeStatusOfStudent(id, status);
     }
 
