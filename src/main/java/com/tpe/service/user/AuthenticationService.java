@@ -48,7 +48,7 @@ public class AuthenticationService {
         Set<String> roles = (Set<String>) userDetails.getAuthorities()
                 .stream()
                 .map(GrantedAuthority::getAuthority)
-                .collect(Collectors.toList());
+                .collect(Collectors.toSet());
 
         Optional<String> role = roles.stream().findFirst();
 
